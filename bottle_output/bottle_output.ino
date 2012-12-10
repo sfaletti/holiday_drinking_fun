@@ -36,7 +36,8 @@ void loop(){
   timeVal = analogRead(TIME_ADJUST_PIN);
   timeVal = map(timeVal, 0, 1023, 0, 5000); // how should we set the pour time? Do we need better feedback?
   testBtnVal = digitalRead(TEST_BTN);
-  if (solVal > 0){
+  if (solVal > 0){ //somebody won
+    //TODO make some noise?
     switch (solVal){
     case 1:
       digitalWrite(SOLOUT_1, HIGH);
