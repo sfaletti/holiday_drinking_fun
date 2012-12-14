@@ -4,80 +4,78 @@
  * Fall 2012
  * Steve Faletti, Tyler Davidson
  * December 2012
+ * Many thanks to DrLuke at Bldr for the shift register code!!!
  */
 
 int SER_Pin = 3;   //pin 14 on the 75HC595
 int RCLK_Pin = 2;  //pin 12 on the 75HC595
 int SRCLK_Pin = 1; //pin 11 on the 75HC595
 
+byte player1Val, player2Val;
+byte score[] = {0,0};
+byte winnerVal; // 0=newround, 1=roundstarted, 2=p1wins, 3=p2wins
+boolean winnerFlag = false;
+unsigned long blinkCounter;
+
 //How many of the shift registers - change this
-#define number_of_74hc595s 1 
+const int number_of_74hc595s = 4;
 
 //do not touch
-#define numOfRegisterPins number_of_74hc595s * 8
+const int numOfRegisterPins = number_of_74hc595s * 8;
 
-boolean registers[numOfRegisterPins];
+//initialize button pins
+const int BTN_PINS[] = {
+  12, 13, 14, 15, 16, 17, 18, 19};
+
+//initialize speaker pin
+const int speakerPin = 4;
+
+boolean registers[numOfRegisterPins]; //32 total pins
 
 void setup(){
+  for (int i=0; i<8; i++){
+    pinMode(BTN_PINS[i], INPUT_PULLUP);
+  }  
   pinMode(SER_Pin, OUTPUT);
   pinMode(RCLK_Pin, OUTPUT);
   pinMode(SRCLK_Pin, OUTPUT);
+  pinMode(speakerPin, OUTPUT);
+
+  winnerVal = 0;
+
+  blinkCounter = 0;
 
   //reset all register pins
   clearRegisters();
   writeRegisters();
 }               
 
-//set all register pins to LOW
-void clearRegisters(){
-  for(int i = numOfRegisterPins - 1; i >=  0; i--){
-    registers[i] = LOW;
-  }
-} 
-
-//Set and display registers
-//Only call AFTER all values are set how you would like (slow otherwise)
-void writeRegisters(){
-
-  digitalWrite(RCLK_Pin, LOW);
-
-  for(int i = numOfRegisterPins - 1; i >=  0; i--){
-    digitalWrite(SRCLK_Pin, LOW);
-
-    int val = registers[i];
-
-    digitalWrite(SER_Pin, val);
-    digitalWrite(SRCLK_Pin, HIGH);
-
-  }
-  digitalWrite(RCLK_Pin, HIGH);
-
-}
-
-//set an individual pin HIGH or LOW
-void setRegisterPin(int index, int value){
-  registers[index] = value;
-}
-
 void loop(){
-
-  clearRegisters();
-
-
-  setRegisterPin(player1Val, HIGH);
-  setRegisterPin(player2Val, HIGH);
-
-
+  switch (winnerVal){
+    case 0:
+    startRound();
+    break;
+    case 1:
+    //carry on playing this round
+    break;
+    case 2:
+    updateScore(0);
+    break;
+    case 3:
+    updateScore(1);
+    break;
+  }
+  
+  if (winnerFlag) {
+    
+  }
+  
   writeRegisters();  //MUST BE CALLED TO DISPLAY CHANGES
   //Only call once after the values are set how you need.
-
-  delay(1000);
 }
 
-void startRound(){
-  randomSeed(analogRead(21)); //seed random value generator from open pin
-  int player1Val = int(random(0, 4)); //generate random value for player1 
-  int player2Val = int(random(4, 8)); //generate random value for player2
-}
+
+
+
 
 
