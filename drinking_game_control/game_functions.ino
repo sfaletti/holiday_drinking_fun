@@ -17,13 +17,14 @@ void startRound(){
 void checkInput(){
   for (int i=0; i<8; i++){
     if (digitalRead(BTN_PINS[i]) == LOW){
-      if (i<4) {
-        score[0]++;
+      if (i < 4) {
+        updateScore(0);
+        break;
       }
       else {
-        score[i]++;
+        updateScore(1);
+        break;
       }
-      break;
     }
   }
 }
@@ -36,21 +37,29 @@ void updateScore(int _winner){
   else { //p2 won, update scoreboard
     registers[score[1] + 12] = true;
   }
+  isRoundStarted = false;
   if (score[_winner] == 4){
-    winnerFlag(_winner+1);
+    isGameWon = true;
+    isGamePlaying = false;
+    winnerVal = _winner + 1;
   }
 }
 
 void declareWinner(int _winner){
-  pourShot(_winner, true);
+  pourShot(_winner);
   for (int i=0; i<16; i++){
     registers[i] = true;
   }
+
 }
 
-void pourShot(int _winner, boolean on){
-  //TODO get solenoid control code in here, no delays
+void pourShot(int _winner){
+  
 }
+
+void setPour(){
+}
+
 
 
 

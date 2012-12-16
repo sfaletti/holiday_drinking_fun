@@ -1,4 +1,4 @@
-#include <Metro.h>
+#include <EEPROM.h>
 
 /*
  * Holiday Drinking Game
@@ -9,12 +9,17 @@
  * Many thanks to DrLuke at Bldr for the shift register code!!!
  */
 
-const int SER_Pin = 3;   //pin 14 on the 75HC595
-const int RCLK_Pin = 2;  //pin 12 on the 75HC595
-const int SRCLK_Pin = 1; //pin 11 on the 75HC595
+const int SER_Pin = 2;   //pin 14 on the 75HC595
+const int RCLK_Pin = 1;  //pin 12 on the 75HC595
+const int SRCLK_Pin = 0; //pin 11 on the 75HC595
 const int number_of_74hc595s = 2; //total number of shift registers
 const int numOfRegisterPins = number_of_74hc595s * 8;
-const int START_BTN = 20;
+const int START_BTN = 4;
+const int SOLOUT_1 = 5;
+const int SOLOUT_2 = 6;
+const int SET_BTN = 9;
+
+byte pourTime = EEPROM.read(0);
 
 byte player1Val, player2Val;
 byte score[] = {
@@ -23,14 +28,14 @@ byte winnerVal; // 0=newround, 1=roundstarted, 2=p1wins, 3=p2wins
 boolean winnerFlag = false;
 boolean isGamePlaying = false;
 boolean isRoundStarted = false;
-unsigned long blinkCounter;
+boolean isGameWon = false;
 
 //initialize button pins
 const int BTN_PINS[] = {
-  12, 13, 14, 15, 16, 17, 18, 19};
+  11, 12, 13, 14, 15, 16, 17, 18};
 
 //initialize speaker pin
-const int speakerPin = 4;
+const int speakerPin = 3;
 
 boolean registers[numOfRegisterPins]; //16 total pins, 8 indicator, 8 scoreboard
 
@@ -43,9 +48,11 @@ void setup(){
   pinMode(RCLK_Pin, OUTPUT);
   pinMode(SRCLK_Pin, OUTPUT);
   pinMode(speakerPin, OUTPUT);
+  pinMode(SET_BTN, INPUT_PULLUP);
+  pinMode(SOLOUT_1, OUTPUT);
+  pinMode(SOLOUT_2, OUTPUT);
 
   winnerVal = 0;
-  blinkCounter = 0;
 
   //reset all register pins
   clearRegisters();
@@ -60,36 +67,20 @@ void loop(){
 
   if (isGamePlaying && !isRoundStarted) {
     startRound();
+    isRoundStarted = true;
   }
+
   while (isGamePlaying && isRoundStarted) {
     checkInput();
   }
 
-  writeRegisters();  //MUST BE CALLED TO DISPLAY CHANGES
-  //Only call once after the values are set how you need.
-}
-
-void switchWinners(int _winnerVal){
-  switch (_winnerVal){
-  case 0:
-    startRound();
-    break;
-  case 1:
-    //carry on playing this round
-    break;
-  case 2:
-    updateScore(0);
-    break;
-  case 3:
-    updateScore(1);
-    break;
+  if (isGameWon){  
+    declareWinner(winnerVal - 1);
   }
+
+  writeRegisters();  //MUST BE CALLED TO DISPLAY CHANGES
 }
 
-
-void startGame(){
-
-}
 
 
 
