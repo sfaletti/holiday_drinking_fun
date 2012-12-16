@@ -12,53 +12,60 @@ void startRound(){
   }
   setRegisterPin(player1Val, HIGH);
   setRegisterPin(player2Val, HIGH);
+  writeRegisters();
 }
 
-void checkInput(){
+int checkInput(){
   for (int i=0; i<8; i++){
     if (digitalRead(BTN_PINS[i]) == LOW){
-      if (i < 4) {
-        updateScore(0);
-        break;
+      if (i < 4) { //player 1 wins round
+        return 1; //return p1 to winnerVal
       }
-      else {
-        updateScore(1);
-        break;
+      else { //player 2 wins rouns
+        return 2; //return p2 to winnerVal
       }
+    }
+    else { //no one has hit yet
+      return 0;
     }
   }
 }
 
 void updateScore(int _winner){
   score[_winner]++; //update score values
-  if (_winner == 0) { //p1 won this round, update scoreboard
+  if (_winner == 1) { //p1 won this round, update scoreboard
     registers[score[0] + 8] = true;
   }
-  else { //p2 won, update scoreboard
+  else if (_winner == 2) { //p2 won, update scoreboard
     registers[score[1] + 12] = true;
   }
-  isRoundStarted = false;
-  if (score[_winner] == 4){
+  if (score[_winner] == 4){ //whoever won hit 4 points
     isGameWon = true;
-    isGamePlaying = false;
-    winnerVal = _winner + 1;
+    pourStartTime = millis();
   }
+  writeRegisters();
+}
+
+void roundFailed(){
+
 }
 
 void declareWinner(int _winner){
-  pourShot(_winner);
   for (int i=0; i<16; i++){
     registers[i] = true;
   }
 
 }
 
-void pourShot(int _winner){
-  
+void pourShot(int valve, boolean openValve){
+  digitalWrite(SOL_VALVE[valve], openValve);
 }
 
 void setPour(){
 }
+
+
+
 
 
 
