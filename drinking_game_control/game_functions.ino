@@ -1,14 +1,31 @@
+void startGame(){
+  clearRegisters();
+  startRound();
+}
+
 void startRound(){
   randomSeed(analogRead(21)); //seed random value generator from open pin
   player1Val = int(random(0, 4)); //generate random value for player1 
   player2Val = int(random(4, 8)); //generate random value for player2 
-  for (int i=0; i<8; i++){ //first 8 registers are for button lights
+  for (int i=0; i<8; i++){
     setRegisterPin(i, LOW);
   }
-  clearRegisters();
   setRegisterPin(player1Val, HIGH);
   setRegisterPin(player2Val, HIGH);
-  winnerVal = 1; //round started
+}
+
+void checkInput(){
+  for (int i=0; i<8; i++){
+    if (digitalRead(BTN_PINS[i]) == LOW){
+      if (i<4) {
+        score[0]++;
+      }
+      else {
+        score[i]++;
+      }
+      break;
+    }
+  }
 }
 
 void updateScore(int _winner){
@@ -21,6 +38,7 @@ void updateScore(int _winner){
   }
   if (score[_winner] == 4){
     winnerFlag(_winner+1);
+  }
 }
 
 void declareWinner(int _winner){
@@ -33,6 +51,8 @@ void declareWinner(int _winner){
 void pourShot(int _winner, boolean on){
   //TODO get solenoid control code in here, no delays
 }
+
+
 
 
 
