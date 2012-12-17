@@ -2,6 +2,7 @@ void startGame(){
   clearRegisters();
   score[0] = 0;
   score[1] = 0;
+  startMelody();
 }
 
 void startRound(){
@@ -55,9 +56,11 @@ void updateScore(int _winner){
   score[_winner-1]++; //update score values
   if (_winner == 1) { //p1 won this round, update scoreboard
     registers[score[0] + 7] = true;
+    pointMelody();
   }
   else if (_winner == 2) { //p2 won, update scoreboard
     registers[score[1] + 11] = true;
+    pointMelody();
   }
   if (score[_winner-1] == 4){ //whoever won hit 4 points
     gameState = 3;
@@ -66,6 +69,8 @@ void updateScore(int _winner){
 }
 
 void declareWinner(int _winner){
+  delay(500);
+  startMelody();
   clearRegisters();
   for (int o=0; o<5; o++){
     if (_winner == 1){
@@ -101,6 +106,7 @@ void pourShot(int valve){
 
 void setPour(){ //TODO
 }
+
 
 
 

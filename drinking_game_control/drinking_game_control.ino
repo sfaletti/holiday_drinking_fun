@@ -78,6 +78,7 @@ void setup(){
   pinMode(SOL_VALVE[0], OUTPUT);
   pinMode(SOL_VALVE[1], OUTPUT);
   pinMode(START_LIGHT, OUTPUT);
+  pinMode(speakerPin, OUTPUT);
 
   winnerVal = 0;
 
