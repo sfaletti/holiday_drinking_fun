@@ -18,11 +18,13 @@ void startRound(){
 int checkInput(){
   for (int i=0; i<8; i++){
     if (digitalRead(BTN_PINS[i]) == LOW){
-      if (i < 4) { //player 1 wins round
-        return 1; //return p1 to winnerVal
-      }
-      else { //player 2 wins rouns
-        return 2; //return p2 to winnerVal
+      if (i == player1Val || i == player2Val){
+        if (i < 4) { //player 1 wins round
+          return 1; //return p1 to winnerVal
+        }
+        else { //player 2 wins rouns
+          return 2; //return p2 to winnerVal
+        }
       }
     }
     else { //no one has hit yet
@@ -63,6 +65,7 @@ void pourShot(int valve, boolean openValve){
 
 void setPour(){
 }
+
 
 
 

@@ -14,6 +14,7 @@ const int RCLK_Pin = 1;  //pin 12 on the 75HC595
 const int SRCLK_Pin = 0; //pin 11 on the 75HC595
 const int number_of_74hc595s = 2; //total number of shift registers
 const int numOfRegisterPins = number_of_74hc595s * 8;
+boolean registers[numOfRegisterPins]; //16 total pins, 8 indicator, 8 scoreboard
 const int START_BTN = 3;
 const int SOL_VALVE[] = {
   5, 6};
@@ -44,9 +45,8 @@ const int BTN_PINS[] = {
 //initialize speaker pin
 const int speakerPin = 20;
 
-boolean registers[numOfRegisterPins]; //16 total pins, 8 indicator, 8 scoreboard
-
 void setup(){
+  Serial.begin(9600);
   if (word(EEPROM.read(0), EEPROM.read(1)) <= 0){ //set EEPROM to 1 second if it's blank
     int time = 1000;
     byte msb = highByte(time);
@@ -80,12 +80,14 @@ void setup(){
 
 void loop(){
   if (digitalRead(START_BTN) == HIGH){
+    Serial.println("start game");
     isGamePlaying = true;
     startGame();
   }
 
   if (isGamePlaying){
     if(!isRoundStarted){
+      Serial.println("start round");
       isRoundStarted = true;
       roundStartTime = millis();
       startRound();
@@ -94,6 +96,7 @@ void loop(){
       //TODO add a time-based limit
       winnerVal = checkInput();
       if (winnerVal > 0){
+        Serial.println(winnerVal);
         isRoundStarted = false;
         updateScore(winnerVal);
         winnerVal = 0;
@@ -123,6 +126,8 @@ void loop(){
     //TODO add base "beckoning" state
   }
 }
+
+
 
 
 
