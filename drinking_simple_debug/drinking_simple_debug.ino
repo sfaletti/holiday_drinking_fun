@@ -21,6 +21,7 @@ void setup(){
 void loop(){
   for (int i=0; i<8; i++){
     if (digitalRead(BTN_PINS[i]) == LOW){
+      Serial.println(i);
       clearRegisters();
       setRegisterPin(i, HIGH);
       break;
