@@ -31,10 +31,15 @@ byte winnerVal; // 0=no one, 1=p1, 2=p2
 
 //state flags
 boolean winnerFlag = false;
-boolean isGamePlaying = false;
-boolean isRoundStarted = false;
+boolean isGameStarting = false;
+boolean isRoundStarting = false;
+boolean isRoundPlaying = false;
 boolean isGameWon = false;
+boolean startState = true;
 
+int gameState = 0;
+
+unsigned long prevMillis;
 unsigned long roundStartTime;
 int roundLength = 1000 * 5; //round limit: 5 seconds
 
@@ -76,56 +81,56 @@ void setup(){
   //reset all register pins
   clearRegisters();
   writeRegisters();
+  prevMillis = 0;
 }               
 
 void loop(){
-  if (digitalRead(START_BTN) == HIGH){
-    Serial.println("start game");
-    isGamePlaying = true;
-    startGame();
-  }
 
-  if (isGamePlaying){
-    if(!isRoundStarted){
-      Serial.println("start round");
-      isRoundStarted = true;
-      roundStartTime = millis();
-      startRound();
+  boolean startVal = digitalRead(START_BTN);
+  switch(gameState){
+  case 0: //new game started
+    if (startVal = LOW && millis() - prevMillis >= 1000){
+      Serial.println("start game");
+      gameState = 1;
+      startGame();
+      prevMillis = millis();
     }
-    while (isRoundStarted){ //loop here until somebody hits a button
-      //TODO add a time-based limit
-      winnerVal = checkInput();
-      if (winnerVal > 0){
-        Serial.println(winnerVal);
-        isRoundStarted = false;
-        updateScore(winnerVal);
-        winnerVal = 0;
-        break;
-      }
-      else if (millis() - roundStartTime >= roundLength){
-        isRoundStarted = false;
-        roundFailed();
-        break;
-      }
-    }
-    if (isGameWon){  
-      if (millis() - pourStartTime >= pourTime){
-        isGameWon = false;
-        isRoundStarted = false;
-        isGamePlaying = false;
-        pourShot(winnerVal-1, false);
-      }
-      else {
-        declareWinner(winnerVal);
-        pourShot(winnerVal-1, true);
-      }
-      writeRegisters();
-    }
+    break;
+  case 1: //new round started
+    Serial.println("round started");
+    gameState = 2;
+    startRound();
+    prevMillis = millis();
+    break;
+  case 2: //round won
+    winnerVal = checkInput();
+    Serial.print("winner: ");
+    Serial.println(winnerVal); 
+    prevMillis = millis();
+    break;
+  case 3: //game won
+    //TODO pour shot
+    gameState = 0;
+    prevMillis = millis();
+    break;
+  default:
+    prevMillis = millis();
   }
-  else { // isGamePlaying is false 
-    //TODO add base "beckoning" state
-  }
+  writeRegisters();  
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
