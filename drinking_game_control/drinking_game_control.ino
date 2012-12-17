@@ -4,90 +4,145 @@
  * Fall 2012
  * Steve Faletti, Tyler Davidson
  * December 2012
+ * Many thanks to DrLuke at Bldr for the shift register code!!!
  */
 
-const int CLOCK_PIN = 0;
-const int REG_PIN = 0;
-const int SCORE_PIN = 0;
-const int DISP1_PIN = 0;
-const int DISP2_PIN = 0;
-const int GAME_PIN = 0;
+#include <EEPROM.h>
 
-const byte BTN_PINS[] = {
-  12, 13, 14, 15, 16, 17, 18, 19};
-int player1Val, player2Val;
+const int SER_Pin = 2;   //pin 14 on the 75HC595
+const int RCLK_Pin = 1;  //pin 12 on the 75HC595
+const int SRCLK_Pin = 0; //pin 11 on the 75HC595
+const int number_of_74hc595s = 2; //total number of shift registers
+const int numOfRegisterPins = number_of_74hc595s * 8;
+boolean registers[numOfRegisterPins]; //16 total pins, 8 indicator, 8 scoreboard
+const int START_BTN = 3;
+const int START_LIGHT = 19;
+const int SOL_VALVE[] = {
+  6, 5};
+const int SET_BTN = 9;
+const int POUR_SET_BTN = 10;
 
-byte disp1Val = 0;
-byte disp2Val = 0;
-byte score1Val = B00000000;
-byte score2Val = B00001000;
-byte scoreVal = 0;
+int pourTime;
 
+byte player1Val, player2Val;
+byte score[] = {
+  0,0};
+byte winnerVal; // 0=no one, 1=p1, 2=p2
+
+//state flags
+boolean winnerFlag = false;
+boolean isGameStarting = false;
+boolean isRoundStarting = false;
+boolean isRoundPlaying = false;
+boolean isGameWon = false;
+boolean startState = true;
+
+int gameState = 0;
+boolean isRoundWon = false;
+
+unsigned long prevMillis;
+unsigned long roundStartTime;
+int roundLength = 1000 * 5; //round limit: 5 seconds
+
+//initialize button pins
+const int BTN_PINS[] = {
+  11, 12, 13, 14, 15, 16, 17, 18};
+
+//initialize speaker pin
+const int speakerPin = 20;
 
 void setup(){
+  Serial.begin(9600);
+  if (word(EEPROM.read(0), EEPROM.read(1)) <= 0){ //set EEPROM to 1 second if it's blank
+    int time = 1000;
+    byte msb = highByte(time);
+    byte lsb = lowByte(time);
+    EEPROM.write(0, msb);
+    EEPROM.write(1, lsb); 
+  }
+  byte _msb = EEPROM.read(0); //msb of pourTime
+  byte _lsb = EEPROM.read(1); //lsb of pourTime
+  pourTime = word(_msb, _lsb); //put the pour time in memory
+  pourTime = 6000;
+
   for (int i=0; i<8; i++){
     pinMode(BTN_PINS[i], INPUT_PULLUP);
-  }  
-  pinMode(CLOCK_PIN, OUTPUT);
-  pinMode(REG_PIN, OUTPUT);
-  pinMode(SCORE_PIN, OUTPUT);
-  pinMode(DISP1_PIN, OUTPUT);
-  pinMode(DISP2_PIN, OUTPUT);
-}
+  } 
+  pinMode(START_BTN, INPUT_PULLUP);
+  pinMode(SER_Pin, OUTPUT);
+  pinMode(RCLK_Pin, OUTPUT);
+  pinMode(SRCLK_Pin, OUTPUT);
+  pinMode(speakerPin, OUTPUT);
+  pinMode(SET_BTN, INPUT_PULLUP);
+  pinMode(POUR_SET_BTN, INPUT_PULLUP);
+  pinMode(SOL_VALVE[0], OUTPUT);
+  pinMode(SOL_VALVE[1], OUTPUT);
+  pinMode(START_LIGHT, OUTPUT);
+
+  winnerVal = 0;
+
+  //reset all register pins
+  clearRegisters();
+  writeRegisters();
+  prevMillis = 0;
+}               
 
 void loop(){
-  randomSeed(analogRead(21)); //seed random value generator from open pin
-  player1Val = byte(random(0, 4)); //generate random value for player1 
-  player2Val = byte(random(4, 8)); //generate random value for player2
-  byte gameVal = 1 << player1Val | 1 << player2Val; //save play pins in a byte
 
-  // blink player1 and player2 lights using random values
-  digitalWrite(REG_PIN, LOW);
-  digitalWrite(CLOCK_PIN, LOW);
-  for (byte mask = B00000001; mask > 0; mask <<= 1){
-    digitalWrite(GAME_PIN, gameVal & mask);
-    digitalWrite(SCORE_PIN, scoreVal & mask);
-    digitalWrite(DISP1_PIN, disp1Val & mask);
-    digitalWrite(DISP2_PIN, disp2Val & mask);
-    digitalWrite(CLOCK_PIN, HIGH);
-  }
-  digitalWrite(REG_PIN, HIGH); //
-
-  //check button input
-  switch (winnerVal(player1Val, player2Val)){
-  case 0:
-    break; //no winner, rerun button scan
-  case 1:
-    //TODO: player 1 wins
-    score1Val <<= 1; //this is wrong
-    break;
-  case 2:
-    //TODO: player 2 wins          
-    score2Val <<= 1; //this is wrong
-    break;
-  }
-  scoreVal = score1Val | score2Val; //this is wrong
-}
-
-int winnerVal(int _player1, int _player2){ //scrub buttons and check which was pressed
-  int winVal;
-  for (int i=0; i<8; i++){ 
-    if (digitalRead(BTN_PINS[i]) == LOW){ //button is pressed
-      if (i == player1Val || i == player2Val){ //check that button pressed equals the target
-        if(i < 4){
-          winVal = 1; //player1 wins
-          break;
-        }
-        if(i >= 4){
-          winVal = 2; //player2 wins
-          break;
-        }
-      }
-      else winVal = 0;
+  boolean startVal = digitalRead(START_BTN);
+  if (startVal == LOW){
+    if (millis() - prevMillis >= 1000){ //new game started
+      Serial.println("start game");
+      gameState = 1;
+      digitalWrite(START_LIGHT, HIGH);
+      startGame();
     }
   }
-  return winVal;
+  else if(startVal == HIGH){
+    prevMillis = millis();
+    switch(gameState){
+    case 0:
+//      for(int i=0; i<16; i++){
+//        setRegisterPin(i, HIGH);
+//      }
+      break;
+    case 1: //new round started
+      Serial.println("round started");
+      gameState = 2;
+      startRound();
+      break;
+    case 2: //playing round
+      checkInput();
+      break;
+    case 3: //game won
+      gameState = 0;
+      digitalWrite(START_LIGHT, LOW);
+      break;
+    }
+  }
+  writeRegisters();  
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
