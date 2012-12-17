@@ -16,12 +16,12 @@ const int number_of_74hc595s = 2; //total number of shift registers
 const int numOfRegisterPins = number_of_74hc595s * 8;
 boolean registers[numOfRegisterPins]; //16 total pins, 8 indicator, 8 scoreboard
 const int START_BTN = 3;
+const int START_LIGHT = 19;
 const int SOL_VALVE[] = {
-  5, 6};
+  6, 5};
 const int SET_BTN = 9;
 const int POUR_SET_BTN = 10;
 
-unsigned long pourStartTime;
 int pourTime;
 
 byte player1Val, player2Val;
@@ -38,6 +38,7 @@ boolean isGameWon = false;
 boolean startState = true;
 
 int gameState = 0;
+boolean isRoundWon = false;
 
 unsigned long prevMillis;
 unsigned long roundStartTime;
@@ -62,6 +63,7 @@ void setup(){
   byte _msb = EEPROM.read(0); //msb of pourTime
   byte _lsb = EEPROM.read(1); //lsb of pourTime
   pourTime = word(_msb, _lsb); //put the pour time in memory
+  pourTime = 6000;
 
   for (int i=0; i<8; i++){
     pinMode(BTN_PINS[i], INPUT_PULLUP);
@@ -75,6 +77,7 @@ void setup(){
   pinMode(POUR_SET_BTN, INPUT_PULLUP);
   pinMode(SOL_VALVE[0], OUTPUT);
   pinMode(SOL_VALVE[1], OUTPUT);
+  pinMode(START_LIGHT, OUTPUT);
 
   winnerVal = 0;
 
@@ -87,37 +90,41 @@ void setup(){
 void loop(){
 
   boolean startVal = digitalRead(START_BTN);
-  switch(gameState){
-  case 0: //new game started
-    if (startVal = LOW && millis() - prevMillis >= 1000){
+  if (startVal == LOW){
+    if (millis() - prevMillis >= 1000){ //new game started
       Serial.println("start game");
       gameState = 1;
+      digitalWrite(START_LIGHT, HIGH);
       startGame();
-      prevMillis = millis();
     }
-    break;
-  case 1: //new round started
-    Serial.println("round started");
-    gameState = 2;
-    startRound();
+  }
+  else if(startVal == HIGH){
     prevMillis = millis();
-    break;
-  case 2: //round won
-    winnerVal = checkInput();
-    Serial.print("winner: ");
-    Serial.println(winnerVal); 
-    prevMillis = millis();
-    break;
-  case 3: //game won
-    //TODO pour shot
-    gameState = 0;
-    prevMillis = millis();
-    break;
-  default:
-    prevMillis = millis();
+    switch(gameState){
+    case 0:
+//      for(int i=0; i<16; i++){
+//        setRegisterPin(i, HIGH);
+//      }
+      break;
+    case 1: //new round started
+      Serial.println("round started");
+      gameState = 2;
+      startRound();
+      break;
+    case 2: //playing round
+      checkInput();
+      break;
+    case 3: //game won
+      gameState = 0;
+      digitalWrite(START_LIGHT, LOW);
+      break;
+    }
   }
   writeRegisters();  
 }
+
+
+
 
 
 
