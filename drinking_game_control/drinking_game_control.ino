@@ -19,7 +19,7 @@ const int START_BTN = 3;
 const int START_LIGHT = 19;
 const int SOL_VALVE[] = {
   6, 5};
-const int SET_BTN = 9;
+const int PURGE_BTN = 9;
 const int POUR_SET_BTN = 10;
 
 int pourTime;
@@ -41,7 +41,7 @@ int gameState = 0;
 boolean isRoundWon = false;
 
 unsigned long prevMillis;
-unsigned long roundStartTime;
+unsigned long purgeMillis;
 int roundLength = 1000 * 5; //round limit: 5 seconds
 
 //initialize button pins
@@ -73,11 +73,12 @@ void setup(){
   pinMode(RCLK_Pin, OUTPUT);
   pinMode(SRCLK_Pin, OUTPUT);
   pinMode(speakerPin, OUTPUT);
-  pinMode(SET_BTN, INPUT_PULLUP);
+  pinMode(PURGE_BTN, INPUT_PULLUP);
   pinMode(POUR_SET_BTN, INPUT_PULLUP);
   pinMode(SOL_VALVE[0], OUTPUT);
   pinMode(SOL_VALVE[1], OUTPUT);
   pinMode(START_LIGHT, OUTPUT);
+  pinMode(speakerPin, OUTPUT);
 
   winnerVal = 0;
 
@@ -98,13 +99,27 @@ void loop(){
       startGame();
     }
   }
+  else if (digitalRead(PURGE_BTN) == LOW){
+    if (millis() - purgeMillis >= 1000){ //start purging
+      gameState = 0;
+      digitalWrite(SOL_VALVE[0], HIGH);
+      digitalWrite(SOL_VALVE[1], HIGH);
+      digitalWrite(START_LIGHT, HIGH);
+      tone(speakerPin, 400, 200);
+      delay(10000);
+      digitalWrite(SOL_VALVE[0], LOW);
+      digitalWrite(SOL_VALVE[1], LOW); 
+      digitalWrite(START_LIGHT, LOW);
+    }  
+  }
   else if(startVal == HIGH){
     prevMillis = millis();
+    purgeMillis = millis();
     switch(gameState){
     case 0:
-//      for(int i=0; i<16; i++){
-//        setRegisterPin(i, HIGH);
-//      }
+      //      for(int i=0; i<16; i++){
+      //        setRegisterPin(i, HIGH);
+      //      }
       break;
     case 1: //new round started
       Serial.println("round started");
@@ -122,6 +137,7 @@ void loop(){
   }
   writeRegisters();  
 }
+
 
 
 
